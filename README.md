@@ -27,7 +27,7 @@ python scripts/run.py load
 
 - Locust WebUI: http://localhost:8089
 - 在 UI 中手工设置用户数和启动压测
-- WebUI 端口读取根目录 `locust-config.json` 中当前环境的 `locust_web_port`
+- WebUI 端口读取根目录 `locust-config.yaml` 中当前环境的 `locust_web_port`
 - 若端口被占用会直接报错，避免同机启动多个 WebUI
 - `load` 默认启用自动重载（修改 `.py` 文件后自动重启 Locust 进程）
 
@@ -91,7 +91,7 @@ Grafana 预置了 `Locust Overview` 面板：
 
 ## 6. 配置外置（根目录配置文件 + 环境管理）
 
-项目配置统一存放在根目录 `locust-config.json`，`config/settings.py` 只负责读取与分发。
+项目配置统一存放在根目录 `locust-config.yaml`，`config/settings.py` 只负责读取与分发。
 
 支持环境切换：
 

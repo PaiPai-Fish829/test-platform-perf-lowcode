@@ -1,10 +1,14 @@
-import json
 import os
 from pathlib import Path
 from typing import Any
 
+try:
+    import yaml  # type: ignore[reportMissingImports]
+except ImportError as exc:
+    raise ImportError("缺少 PyYAML 依赖，请先执行 `pip install -r requirements.txt`。") from exc
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CONFIG_FILE = PROJECT_ROOT / "locust-config.json"
+CONFIG_FILE = PROJECT_ROOT / "locust-config.yaml"
 
 
 def _load_root_config() -> dict[str, Any]:
@@ -12,10 +16,10 @@ def _load_root_config() -> dict[str, Any]:
         raise FileNotFoundError(f"未找到配置文件: {CONFIG_FILE}")
 
     with CONFIG_FILE.open("r", encoding="utf-8") as f:
-        config = json.load(f)
+        config = yaml.safe_load(f)
 
     if not isinstance(config, dict):
-        raise ValueError("根配置文件格式错误，顶层必须是 JSON Object。")
+        raise ValueError("根配置文件格式错误，顶层必须是 YAML Mapping。")
     return config
 
 

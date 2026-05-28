@@ -168,7 +168,7 @@ def _run_locust(args: argparse.Namespace, passthrough: list[str]) -> int:
         if _is_port_in_use(args.web_port):
             print(
                 f"端口 {args.web_port} 已被占用。请先停止当前占用进程，"
-                "或在根目录 locust-config.json 中调整当前环境的 locust_web_port。"
+                "或在根目录 locust-config.yaml 中调整当前环境的 locust_web_port。"
             )
             return 1
         cmd.extend(["--web-port", str(args.web_port)])
