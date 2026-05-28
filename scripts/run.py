@@ -172,6 +172,7 @@ def _run_locust(args: argparse.Namespace, passthrough: list[str]) -> int:
             )
             return 1
         cmd.extend(["--web-port", str(args.web_port)])
+        print(f"WebUI URL: http://localhost:{args.web_port}")
     else:
         cmd.extend(
             [
