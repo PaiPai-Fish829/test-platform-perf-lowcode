@@ -18,6 +18,40 @@ WATCH_EXTENSIONS = {".py"}
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+
+def _project_venv_python() -> Path | None:
+    if sys.platform == "win32":
+        candidate = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
+    else:
+        candidate = PROJECT_ROOT / ".venv" / "bin" / "python"
+    return candidate if candidate.is_file() else None
+
+
+def _ensure_project_venv() -> None:
+    """未激活 venv 时，若当前解释器缺少依赖则自动切换到项目 .venv。"""
+    venv_python = _project_venv_python()
+    if venv_python is None:
+        return
+
+    try:
+        if Path(sys.executable).resolve() == venv_python.resolve():
+            return
+    except OSError:
+        return
+
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        print(
+            f"当前 Python 未安装项目依赖: {sys.executable}\n"
+            f"正在切换到项目虚拟环境: {venv_python}",
+            file=sys.stderr,
+        )
+        raise SystemExit(subprocess.call([str(venv_python), *sys.argv]))
+
+
+_ensure_project_venv()
+
 from config import settings
 
 

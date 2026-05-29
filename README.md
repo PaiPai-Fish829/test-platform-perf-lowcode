@@ -60,6 +60,13 @@ locust-perf-framework/
 │   └── users.csv
 ├── locust-config.yaml             # 根配置文件（环境、端口、并发、运行时参数）
 ├── locustfile.py                  # Locust 入口（用户类与 shape 注册）
+├── platform/                      # 管理平台（React + TypeScript + Vite，独立 Web 应用）
+│   ├── src/
+│   │   ├── components/            # LocustMonitor、GrafanaMonitor、布局
+│   │   ├── pages/                 # 监控页 / 配置页
+│   │   └── config.ts              # Locust / Grafana 地址配置
+│   ├── .env.example
+│   └── README.md
 ├── requirements.txt               # Python 依赖
 └── README.md
 ```
@@ -217,3 +224,45 @@ python scripts/run.py stress --shape stage_hold
 
 - **请求语法直观**  
   Locust 基于 requests 风格，直接支持 `headers`、`params`、`json`、`data`。
+
+## 10. 管理平台（platform/）
+
+`platform/` 是与 Locust 压测脚本**完全独立**的前端 Web 应用，用于统一查看压测监控与（后续）服务器性能面板。
+
+### 10.1 与 lite 分支的区别
+
+| 维度 | main 分支（含 platform/） | lite 分支 |
+|------|---------------------------|-----------|
+| 定位 | 压测框架 + 可视化管理平台 | 纯 Locust 轻量压测基线 |
+| 前端 | React 管理平台，iframe 嵌入 Locust / Grafana | 无独立前端，直接使用 Locust 原生 WebUI |
+| 启动 | Python 压测与前端分别启动 | 仅需 `python scripts/run.py` |
+| 适用场景 | 需要统一监控入口、后续配置编排 | 本地快速压测、CI 无头执行 |
+
+### 10.2 启动管理平台
+
+```bash
+cd platform
+npm install
+cp .env.example .env   # 按需修改 Locust / Grafana 地址
+npm run dev
+```
+
+- 管理平台：http://localhost:5173
+- 默认首页 `/monitor`，iframe 嵌入 Locust WebUI（需先启动压测）
+
+同时启动 Locust（项目根目录）：
+
+```bash
+python scripts/run.py load
+```
+
+在 `.env` 中设置 `VITE_LOCUST_URL=http://localhost:8089`（与 Locust WebUI 端口一致）。
+
+### 10.3 生产构建
+
+```bash
+cd platform
+npm run build
+```
+
+详细说明见 [platform/README.md](platform/README.md)。
