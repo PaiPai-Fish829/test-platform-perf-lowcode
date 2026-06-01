@@ -294,7 +294,7 @@ npm run dev
 python scripts/run.py load
 ```
 
-在 `.env` 中设置 `VITE_LOCUST_URL=http://localhost:8089`（与 Locust WebUI 端口一致）。
+自定义 Web 平台端口与 Locust 对齐：`python scripts/sync_platform_env.py`（`run.py load` 会自动执行），或开发时由 `platform/vite.locust.ts` 直接读取 `locust-config.yaml`。运行时也可 `GET /platform/config` 获取当前端口。
 
 ### 10.3 生产构建
 

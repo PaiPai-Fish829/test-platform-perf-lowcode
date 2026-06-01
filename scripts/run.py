@@ -313,6 +313,13 @@ def _run_locust(args: argparse.Namespace, passthrough: list[str]) -> int:
                 "或在根目录 locust-config.yaml 中调整当前环境的 locust_web_port。"
             )
             return 1
+        try:
+            from scripts.sync_platform_env import sync_platform_env
+
+            synced = sync_platform_env(args.web_port)
+            print(f"已同步前端环境: {synced}（VITE_LOCUST_URL=http://localhost:{args.web_port}）")
+        except Exception as exc:
+            print(f"提示: 未能同步 platform/.env（{exc}），开发前端时请手动运行 sync_platform_env.py")
         cmd.extend(["--web-port", str(args.web_port)])
         print(f"WebUI URL: http://localhost:{args.web_port}")
         if shape_enabled == "1":

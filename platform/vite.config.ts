@@ -1,10 +1,10 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolveLocustTarget } from './vite.locust'
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  const locustTarget = env.VITE_LOCUST_URL || 'http://localhost:8089'
+export default defineConfig(() => {
+  const locustTarget = resolveLocustTarget()
 
   return {
     plugins: [react()],

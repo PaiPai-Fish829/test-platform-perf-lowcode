@@ -1,4 +1,7 @@
-import { locustApiBase } from '../config'
+import { fetchPlatformRuntimeConfig, locustApiBase, type PlatformRuntimeConfig } from '../config'
+
+export type { PlatformRuntimeConfig }
+export { fetchPlatformRuntimeConfig }
 
 export interface ScenarioMeta {
   id: string

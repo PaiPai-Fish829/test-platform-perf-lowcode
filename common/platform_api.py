@@ -357,6 +357,19 @@ def on_locust_init(environment, **kwargs):
 
     web_ui._update_shape_class = _update_shape_class_with_params
 
+    @environment.web_ui.app.route("/platform/config")
+    def platform_config():
+        """返回与 locust-config.yaml 一致的 WebUI 端口等信息，供自定义前端读取。"""
+        port = app_settings.LOCUST_WEB_PORT
+        return jsonify(
+            {
+                "current_env": app_settings.CURRENT_ENV,
+                "locust_web_port": port,
+                "locust_url": f"http://localhost:{port}",
+                "locust_host": app_settings.LOCUST_HOST,
+            }
+        )
+
     @environment.web_ui.app.route("/platform/scenarios")
     def platform_scenarios():
         return jsonify({"scenarios": list_scenario_files()})

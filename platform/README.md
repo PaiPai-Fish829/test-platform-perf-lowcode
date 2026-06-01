@@ -26,23 +26,31 @@ npm run dev
 
 默认开发地址：http://localhost:5173
 
-开发模式下，前端将 `/locust-api/*` 代理到 `VITE_LOCUST_URL`（见 `vite.config.ts`），避免跨域。
+开发模式下，前端将 `/locust-api/*` 代理到 Locust；**代理目标端口**由根目录 `locust-config.yaml` 的 `locust_web_port` 决定（`vite.locust.ts` 调用与 `config/settings.py` 相同的 Python 配置），不再写死 8089。
 
-## 环境变量
+## 端口与 Locust 对齐
 
-复制并按需修改：
+| 方式 | 说明 |
+|------|------|
+| `locust-config.yaml` | 改 `locust_web_port` 后，重启 `npm run dev` 即可（Vite 启动时读配置） |
+| `python scripts/run.py load` | 启动 Locust 前自动写入 `platform/.env` 的 `VITE_LOCUST_URL` |
+| `python scripts/sync_platform_env.py` | 手动同步 `platform/.env` |
+| `GET /platform/config` | Locust 运行后，前端可拉取当前 `locust_web_port` / `locust_url` |
+
+## 环境变量（可选覆盖）
 
 ```bash
 cp .env.example .env
+python ../scripts/sync_platform_env.py   # 推荐：从 yaml 生成 .env
 ```
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `VITE_LOCUST_URL` | Locust 服务地址；开发时代理目标 | `http://localhost:8089` |
-| `VITE_LOCUST_API_BASE` | 前端请求 API 的基址前缀 | 开发：`/locust-api`；生产：同 `VITE_LOCUST_URL` |
-| `VITE_GRAFANA_URL` | Grafana 地址（预留） | `http://localhost:3000` |
+| 变量 | 说明 | 默认 |
+|------|------|------|
+| `VITE_LOCUST_URL` | 覆盖 Locust 地址（高于 yaml） | 由 yaml / sync 脚本生成 |
+| `VITE_LOCUST_API_BASE` | API 基址 | 开发：`/locust-api`；生产：同 `VITE_LOCUST_URL` |
+| `VITE_GRAFANA_URL` | Grafana | `http://localhost:3000` |
 
-配置读取逻辑见 `src/config.ts`。修改 `.env` 后需重启 `npm run dev`。
+详见 `src/config.ts`。修改 `locust-config.yaml` 或 `.env` 后需重启 `npm run dev`。
 
 ## API 架构说明
 
@@ -53,7 +61,7 @@ cp .env.example .env
     ├─ fetch(`${locustApiBase}/platform/scenarios`) … 本项目扩展（common/platform_api.py）
     │
     ▼
-开发: Vite proxy  /locust-api  →  http://localhost:8089
+开发: Vite proxy  /locust-api  →  http://localhost:{locust_web_port}（来自 locust-config.yaml）
 生产: 直连         VITE_LOCUST_URL（需与 Locust 同域或配置 CORS）
 ```
 
@@ -96,6 +104,7 @@ cp .env.example .env
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
+| GET | `/platform/config` | 返回 `locust_web_port`、`locust_url`、`locust_host`（与 locust-config.yaml 一致） |
 | GET | `/platform/scenarios` | 扫描 `scenarios/` 下 HttpUser 子类（含是否参数化、默认数据文件） |
 | GET | `/platform/data-files` | 列出 `data/` 下可用 `.csv` / `.yaml` / `.yml` |
 | GET | `/platform/shapes` | 扫描 `shapes/` 下 LoadTestShape（含 `param_schema`） |
