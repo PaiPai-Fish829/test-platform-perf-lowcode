@@ -173,6 +173,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="WebUI port",
     )
     load.add_argument(
+        "--web-host",
+        default=os.getenv("LOCUST_WEB_HOST", settings.LOCUST_WEB_HOST),
+        help="WebUI bind address (use 0.0.0.0 for Docker/Prometheus scrape)",
+    )
+    load.add_argument(
         "--shape",
         choices=("none", "stage", "stage_hold", "0", "1"),
         default=_shape_from_env(default_when_enabled="stage", fallback="none"),
@@ -320,8 +325,8 @@ def _run_locust(args: argparse.Namespace, passthrough: list[str]) -> int:
             print(f"已同步前端环境: {synced}（VITE_LOCUST_URL=http://localhost:{args.web_port}）")
         except Exception as exc:
             print(f"提示: 未能同步 platform/.env（{exc}），开发前端时请手动运行 sync_platform_env.py")
-        cmd.extend(["--web-port", str(args.web_port)])
-        print(f"WebUI URL: http://localhost:{args.web_port}")
+        cmd.extend(["--web-port", str(args.web_port), "--web-host", args.web_host])
+        print(f"WebUI URL: http://localhost:{args.web_port}（metrics 绑定 {args.web_host}）")
         if shape_enabled == "1":
             print(f"当前 shape: {shape_name}（WebUI 并发输入框会由 Locust 自动禁用）")
     else:

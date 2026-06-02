@@ -105,6 +105,7 @@ LOCUST_USERS = _require_int(_CURRENT_ENV_CONFIG, "locust_users")
 LOCUST_SPAWN_RATE = _require_int(_CURRENT_ENV_CONFIG, "locust_spawn_rate")
 LOCUST_RUN_TIME = _require_text(_CURRENT_ENV_CONFIG, "locust_run_time")
 LOCUST_WEB_PORT = _require_int(_CURRENT_ENV_CONFIG, "locust_web_port")
+LOCUST_WEB_HOST = _optional_text(_CURRENT_ENV_CONFIG, "locust_web_host", "0.0.0.0")
 LOCUST_WEB_RELOAD = _require_bool(_CURRENT_ENV_CONFIG, "locust_web_reload")
 
 DATA_FILE = _require_text(_CURRENT_ENV_CONFIG, "data_file")

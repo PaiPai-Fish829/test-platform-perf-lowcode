@@ -6,6 +6,7 @@ __pycache__/
 reports/*.csv
 reports/*.html
 reports/*.json
+monitoring-local/tools/
 
 platform/node_modules/
 platform/dist/
