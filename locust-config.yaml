@@ -14,6 +14,8 @@ environments:
     locust_run_time: "5m"
     # WebUI 端口
     locust_web_port: 8089
+    # WebUI 绑定地址（Docker 抓取 /metrics 需 0.0.0.0，勿用 127.0.0.1）
+    locust_web_host: "0.0.0.0"
     # WebUI 模式是否自动重载 py 文件变更
     locust_web_reload: true
 

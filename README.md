@@ -59,6 +59,11 @@ locust-perf-framework/
 │       └── provisioning/
 │           ├── datasources/prometheus.yml
 │           └── dashboards/dashboard.yml
+├── monitoring-local/              # 本地监控栈（Windows + Docker Desktop，Makefile 管理）
+│   ├── Makefile
+│   ├── setup-docker-proxy.py      # 配置 Docker Desktop + Clash 代理（WSL2）
+│   ├── docker-compose.yml
+│   └── prometheus.yml
 ├── reports/                       # 运行产物目录（CSV 统计、失败、异常等）
 ├── scripts/                       # 启动入口与运行控制脚本
 │   ├── run.py                     # 统一命令入口：load / stress
@@ -178,6 +183,77 @@ Grafana 预置了 `Locust Overview` 面板：
 - Error%
 - Received KB/sec
 - Sent KB/sec
+
+### 本地监控栈启动（Windows + Docker Desktop）
+
+适用于在 Windows 本机运行 Locust、通过 Docker Desktop 启动 Prometheus + Grafana 的场景。
+
+**步骤 1：启动 Locust（暴露 `/metrics` 端点）**
+
+```powershell
+python scripts/run.py load
+```
+
+确认 Locust WebUI 可访问：http://localhost:8089
+
+**步骤 2：配置 Docker 代理（WSL2 + Clash，首次需要）**
+
+Docker Desktop 使用 WSL2 引擎时，改 `%USERPROFILE%\.docker\daemon.json` **无效**。需配置 Docker Desktop 的 **Containers Proxy**：
+
+```bash
+cd monitoring-local
+make setup-proxy
+```
+
+脚本会自动：
+- 检测 Clash 端口（默认 7890，也支持 7897 等）
+- 写入 `%APPDATA%\Docker\settings-store.json`（Docker Desktop + Containers 双端代理）
+- 禁用 WSL 自动注入错误代理（`~/.wslconfig` → `autoProxy=false`）
+- 重启 Docker Desktop
+
+**Clash 注意**：脚本使用 `http://127.0.0.1:<端口>`（Docker Desktop 会转发到 Windows 宿主机）。若端口不是 7890：
+
+```bash
+set CLASH_PORT=7890
+make setup-proxy
+```
+
+**步骤 3：启动本地监控栈**
+
+在 CentOS VM 上先启动 node_exporter（端口 9100），并确认 `monitoring-local/prometheus.yml` 中 `centos-vm` 目标地址正确（默认 `192.168.47.129:9100`）。
+
+```bash
+make restart-prometheus    # 更新 prometheus.yml 后执行
+make pull-test             # 可选：验证 docker pull 是否正常
+make up
+```
+
+- Prometheus Targets: http://localhost:9090/targets（应看到 `locust`、`centos-vm`、`prometheus` 均为 UP）
+- Grafana: http://localhost:3000 （admin / admin）
+
+**步骤 4：配置 Grafana**
+
+1. 进入 **Connections → Data sources → Add data source → Prometheus**
+2. URL 填写 `http://prometheus:9090`（容器内网络地址，勿填 localhost）
+3. 保存数据源后，导入仪表盘 `monitoring/grafana/dashboards/locust-overview.json`（Locust 8089 + CentOS VM node_exporter 9100）
+
+**停止监控栈**
+
+```bash
+make down
+```
+
+**常见问题**
+
+- `make` 不是内部或外部命令：安装 Make 后重启终端（`winget install GnuWin32.Make`）。
+- 改 `daemon.json` 不生效：WSL2 后端必须走 `make setup-proxy` 或 Docker Desktop → Settings → Resources → Proxies。
+- 拉镜像报 `connection refused` 到 `host.docker.internal`：Clash 只监听 127.0.0.1 时，请重新运行 `make setup-proxy`（已改为 127.0.0.1 转发）。
+- 拉镜像超时：确认 Clash 已启动且系统代理/TUN 模式正常。
+- Grafana 无数据：先打开 http://localhost:9090/targets，确认 `locust` 与 `centos-vm` 为 **UP**。
+  - `locust` DOWN：Locust 只监听了 IPv6——**完全重启** `python scripts/run.py load`（`Ctrl+C` 后重开；自动重载不会应用 `--web-host 0.0.0.0`）。
+  - `centos-vm` DOWN：确认 CentOS 上 node_exporter 在 9100 运行，且 Prometheus 能访问该 IP。
+  - 导入 dashboard 时数据源名称须为 **Prometheus**，URL 为 `http://prometheus:9090`。
+  - Locust 面板需已在 WebUI 中 **Start** 压测才有 RPS/带宽曲线。
 
 ## 5. 指标查看说明
 
