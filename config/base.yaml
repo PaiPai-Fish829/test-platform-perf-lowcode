@@ -1,0 +1,4 @@
+# 公共配置（所有环境共享）
+# 场景 + 策略组合由 Platform 或 shapes/*.py 管理，不在此重复声明 test_shape
+data_file: "users.yaml"
+data_strategy: "cycle"

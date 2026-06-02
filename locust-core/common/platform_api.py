@@ -16,9 +16,10 @@ from utils.configurable_shape import ConfigurableShape
 from utils.data_loader import DATA_DIR
 from utils.parametrize import set_runtime_overrides
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCENARIOS_DIR = PROJECT_ROOT / "scenarios"
-SHAPES_DIR = PROJECT_ROOT / "shapes"
+from config.paths import LOCORE_ROOT
+
+SCENARIOS_DIR = LOCORE_ROOT / "scenarios"
+SHAPES_DIR = LOCORE_ROOT / "shapes"
 DATA_STRATEGIES = ("cycle", "random")
 
 
@@ -359,7 +360,7 @@ def on_locust_init(environment, **kwargs):
 
     @environment.web_ui.app.route("/platform/config")
     def platform_config():
-        """返回与 locust-config.yaml 一致的 WebUI 端口等信息，供自定义前端读取。"""
+        """返回与 config/*.yaml 一致的 WebUI 端口等信息，供自定义前端读取。"""
         port = app_settings.LOCUST_WEB_PORT
         return jsonify(
             {

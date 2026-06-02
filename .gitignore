@@ -7,6 +7,7 @@ reports/*.csv
 reports/*.html
 reports/*.json
 monitoring-local/tools/
+deployment/dev/tools/
 
 platform/node_modules/
 platform/dist/

@@ -9,3 +9,4 @@ providers:
     editable: true
     options:
       path: /var/lib/grafana/dashboards
+      # 推荐 locust-variable.json（变量化）；locust-overview.json 为固定 job 参考

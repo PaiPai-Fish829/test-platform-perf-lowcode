@@ -1,4 +1,10 @@
+"""Load merged YAML config: base.yaml + {env}.yaml with env-var substitution."""
+
+from __future__ import annotations
+
 import os
+import re
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -7,20 +13,58 @@ try:
 except ImportError as exc:
     raise ImportError("缺少 PyYAML 依赖，请先执行 `pip install -r requirements.txt`。") from exc
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CONFIG_FILE = PROJECT_ROOT / "locust-config.yaml"
+from config.paths import CONFIG_DIR
+
+_ENV_VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
 
 
-def _load_root_config() -> dict[str, Any]:
-    if not CONFIG_FILE.exists():
-        raise FileNotFoundError(f"未找到配置文件: {CONFIG_FILE}")
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    merged = deepcopy(base)
+    for key, value in override.items():
+        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = deepcopy(value)
+    return merged
 
-    with CONFIG_FILE.open("r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
 
-    if not isinstance(config, dict):
-        raise ValueError("根配置文件格式错误，顶层必须是 YAML Mapping。")
-    return config
+def _expand_env(value: Any) -> Any:
+    if isinstance(value, str):
+        def repl(match: re.Match[str]) -> str:
+            name = match.group(1)
+            return os.getenv(name, match.group(0))
+
+        return _ENV_VAR_PATTERN.sub(repl, value)
+    if isinstance(value, dict):
+        return {k: _expand_env(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_expand_env(item) for item in value]
+    return value
+
+
+def _load_yaml(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise FileNotFoundError(f"未找到配置文件: {path}")
+    with path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"配置文件格式错误，顶层必须是 YAML Mapping: {path}")
+    return data
+
+
+def load_env_config(env: str | None = None) -> dict[str, Any]:
+    current = env or os.getenv("LOCUST_ENV", "dev")
+    base = _load_yaml(CONFIG_DIR / "base.yaml")
+    env_file = CONFIG_DIR / f"{current}.yaml"
+    if not env_file.exists():
+        raise ValueError(f"环境 `{current}` 不存在，缺少配置文件: {env_file}")
+    merged = _deep_merge(base, _load_yaml(env_file))
+    return _expand_env(merged)
+
+
+def load_observability_config() -> dict[str, Any]:
+    path = CONFIG_DIR / "observability.yaml"
+    return _expand_env(_load_yaml(path))
 
 
 def _require_text(source: dict[str, Any], key: str) -> str:
@@ -90,32 +134,21 @@ def _optional_text(source: dict[str, Any], key: str, default: str) -> str:
     return value
 
 
-_ROOT_CONFIG = _load_root_config()
-_ENVIRONMENTS = _ROOT_CONFIG.get("environments")
-if not isinstance(_ENVIRONMENTS, dict) or not _ENVIRONMENTS:
-    raise ValueError("配置文件缺少 `environments`，或其内容为空。")
+CURRENT_ENV = os.getenv("LOCUST_ENV", "dev")
+if CURRENT_ENV == "observability":
+    raise ValueError("LOCUST_ENV=observability 不适用于压测运行时，请使用 deployment/observability 部署监控栈。")
 
-CURRENT_ENV = os.getenv("LOCUST_ENV") or _require_text(_ROOT_CONFIG, "active_env")
-_CURRENT_ENV_CONFIG = _ENVIRONMENTS.get(CURRENT_ENV)
-if not isinstance(_CURRENT_ENV_CONFIG, dict):
-    raise ValueError(f"环境 `{CURRENT_ENV}` 不存在于 `environments` 中。")
+_CONFIG = load_env_config(CURRENT_ENV)
 
-LOCUST_HOST = _require_text(_CURRENT_ENV_CONFIG, "locust_host")
-LOCUST_USERS = _require_int(_CURRENT_ENV_CONFIG, "locust_users")
-LOCUST_SPAWN_RATE = _require_int(_CURRENT_ENV_CONFIG, "locust_spawn_rate")
-LOCUST_RUN_TIME = _require_text(_CURRENT_ENV_CONFIG, "locust_run_time")
-LOCUST_WEB_PORT = _require_int(_CURRENT_ENV_CONFIG, "locust_web_port")
-LOCUST_WEB_HOST = _optional_text(_CURRENT_ENV_CONFIG, "locust_web_host", "0.0.0.0")
-LOCUST_WEB_RELOAD = _require_bool(_CURRENT_ENV_CONFIG, "locust_web_reload")
+LOCUST_HOST = _require_text(_CONFIG, "locust_host")
+LOCUST_USERS = _require_int(_CONFIG, "locust_users")
+LOCUST_SPAWN_RATE = _require_int(_CONFIG, "locust_spawn_rate")
+LOCUST_RUN_TIME = _require_text(_CONFIG, "locust_run_time")
+LOCUST_WEB_PORT = _require_int(_CONFIG, "locust_web_port")
+LOCUST_WEB_HOST = _optional_text(_CONFIG, "locust_web_host", "0.0.0.0")
+LOCUST_WEB_RELOAD = _require_bool(_CONFIG, "locust_web_reload")
+WEB_UI = _require_bool(_CONFIG, "web_ui")
+LOCUST_MASTER_HOST = _optional_text(_CONFIG, "locust_master_host", "")
 
-DATA_FILE = _require_text(_CURRENT_ENV_CONFIG, "data_file")
-DATA_STRATEGY = _optional_text(_CURRENT_ENV_CONFIG, "data_strategy", "cycle")
-
-_TEST_SHAPE = _require_mapping(_CURRENT_ENV_CONFIG, "test_shape")
-SHAPE_DEFAULT = _optional_text(_TEST_SHAPE, "default_shape", "stage")
-SHAPE_START_USERS = _optional_int(_TEST_SHAPE, "start_users", 10)
-SHAPE_STEP_USERS = _optional_int(_TEST_SHAPE, "step_users", 10)
-SHAPE_STEP_DURATION = _optional_int(_TEST_SHAPE, "step_duration", 30)
-SHAPE_PEAK_USERS = _optional_int(_TEST_SHAPE, "peak_users", 100)
-SHAPE_PEAK_HOLD_TIME = _optional_int(_TEST_SHAPE, "peak_hold_time", 60)
-SHAPE_TOTAL_TIME_LIMIT = _optional_int(_TEST_SHAPE, "total_time_limit", 0)
+DATA_FILE = _require_text(_CONFIG, "data_file")
+DATA_STRATEGY = _optional_text(_CONFIG, "data_strategy", "cycle")

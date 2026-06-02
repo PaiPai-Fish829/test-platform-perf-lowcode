@@ -1,0 +1,10 @@
+# CI 压测端：无头模式、分布式可选
+locust_host: "${TARGET_HOST}"
+locust_users: 500
+locust_spawn_rate: 20
+locust_run_time: "30m"
+web_ui: false
+locust_web_port: 8089
+locust_web_host: "0.0.0.0"
+locust_web_reload: false
+locust_master_host: "${LOCUST_MASTER}"
