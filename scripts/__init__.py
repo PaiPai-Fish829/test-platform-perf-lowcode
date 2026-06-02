@@ -1,1 +1,1 @@
-"""Scripts package placeholder."""
+"""Backward-compatible scripts package."""

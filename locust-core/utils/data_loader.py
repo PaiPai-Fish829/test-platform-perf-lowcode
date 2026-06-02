@@ -10,8 +10,7 @@ from typing import Any
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
+from config.paths import DATA_DIR, REPO_ROOT
 ROW_STRATEGIES = {"cycle", "random"}
 
 _FILE_CACHE: dict[Path, list[dict[str, Any]]] = {}
@@ -24,7 +23,7 @@ def _resolve_data_path(file_name: str) -> Path:
     if candidate.is_absolute():
         return candidate
     if candidate.parts and candidate.parts[0] == "data":
-        return PROJECT_ROOT / candidate
+        return REPO_ROOT / candidate
     return DATA_DIR / candidate
 
 

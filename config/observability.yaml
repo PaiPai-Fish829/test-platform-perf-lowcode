@@ -1,0 +1,14 @@
+# 监控端专用配置（Prometheus / Grafana 部署）
+scrape_interval: "5s"
+retention_days: 15
+
+prometheus:
+  locust_job: "locust"
+  locust_targets: "host.docker.internal:8089"
+  node_job: "centos-vm"
+  node_targets: "192.168.47.129:9100"
+
+grafana:
+  admin_user: "admin"
+  admin_password: "admin"
+  default_dashboard: "locust-variable.json"

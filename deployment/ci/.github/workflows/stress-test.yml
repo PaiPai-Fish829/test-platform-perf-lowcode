@@ -1,0 +1,73 @@
+name: Stress Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_host:
+        description: Target API host
+        required: true
+        default: http://staging.example.com
+      users:
+        description: Virtual users
+        required: true
+        default: "100"
+      run_time:
+        description: Test duration (e.g. 10m)
+        required: true
+        default: "10m"
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run headless stress test
+        env:
+          TARGET_HOST: ${{ github.event.inputs.target_host }}
+          LOCUST_ENV: ci
+        run: |
+          cd locust-core
+          python scripts/run.py --env ci \
+            --users ${{ github.event.inputs.users }} \
+            --run-time ${{ github.event.inputs.run_time }}
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-reports
+          path: reports/
+
+      - name: Threshold check (error rate)
+        if: always()
+        run: |
+          python - <<'PY'
+          import csv
+          import glob
+          import sys
+
+          files = glob.glob("reports/stress*_stats.csv")
+          if not files:
+              print("No stats CSV found, skip threshold check")
+              sys.exit(0)
+          with open(files[0], encoding="utf-8") as f:
+              rows = list(csv.DictReader(f))
+          if not rows:
+              sys.exit(0)
+          total = sum(int(r.get("Request Count", 0) or 0) for r in rows)
+          failures = sum(int(r.get("Failure Count", 0) or 0) for r in rows)
+          rate = (failures / total * 100) if total else 0
+          print(f"Error rate: {rate:.2f}%")
+          if rate > 5:
+              print(f"Error rate {rate:.2f}% exceeds 5% threshold")
+              sys.exit(1)
+          PY

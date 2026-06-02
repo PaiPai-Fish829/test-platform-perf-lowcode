@@ -1,0 +1,9 @@
+# 开发端：WebUI 调试、场景开发、本地 metrics 暴露
+locust_host: "http://192.168.47.129:80"
+locust_users: 10
+locust_spawn_rate: 10
+locust_run_time: "5m"
+web_ui: true
+locust_web_port: 8089
+locust_web_host: "0.0.0.0"
+locust_web_reload: true

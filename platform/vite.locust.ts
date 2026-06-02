@@ -1,5 +1,5 @@
 /**
- * 从项目根 locust-config.yaml 解析 Locust WebUI 地址（与 config/settings.py 一致）。
+ * 从 config/*.yaml 解析 Locust WebUI 地址（与 config/settings.py 一致）。
  * 供 vite.config.ts 开发代理使用；优先 VITE_LOCUST_URL，其次 Python 读取配置。
  */
 import { execSync } from 'node:child_process'
