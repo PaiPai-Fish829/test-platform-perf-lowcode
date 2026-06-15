@@ -1,4 +1,4 @@
-# locust-perf-framework
+# test-platform-perf-lowcode
 
 基于 **Python + Locust** 的性能测试框架，采用**三端分离**架构：开发端、CI 压测端、监控端。同一仓库通过不同配置与启动命令运行不同角色。
 
