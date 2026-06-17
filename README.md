@@ -117,12 +117,29 @@ Windows + Clash 代理：`make setup-proxy` 后重启 Docker Desktop。
 
 ### 启动命令
 
+固定并发（无 Shape，适合冒烟或恒定负载）：
+
 ```bash
 cd locust-core
 TARGET_HOST=http://your-api.example.com python scripts/run.py --env ci --users 100 --run-time 10m
 ```
 
-`config/ci.yaml` 默认：`web_ui: false`、500 用户、30 分钟。命令行参数可覆盖。
+指定场景 + 压测策略（实际压测更常用）：
+
+```bash
+cd locust-core
+TARGET_HOST=http://your-api.example.com python scripts/run.py --env ci \
+  --shape stage_hold \
+  --classes LoginScenario
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--classes` | Locust 原生参数（透传），选择 `scenarios/` 下场景类，如 `LoginScenario`、`AddLocationFlowScenario`；省略则运行全部场景 |
+| `--shape` | `none`（默认）、`stage`（阶梯加压）、`stage_hold`（阶梯 + 峰值保持）；启用后并发由 Shape 控制，`--users` 不再生效 |
+| `LOCUST_SHAPE_*` | 覆盖 Shape 参数，如 `LOCUST_SHAPE_PEAK_USERS=200`、`LOCUST_SHAPE_PEAK_HOLD_TIME=120`（默认值见 `shapes/*.py` 的 `SHAPE_DEFAULTS`） |
+
+`config/ci.yaml` 默认：`web_ui: false`、500 用户、30 分钟。无 Shape 时命令行 `--users` / `--run-time` 可覆盖；启用 Shape 后时长主要由策略参数决定。
 
 分布式（可选）：
 
